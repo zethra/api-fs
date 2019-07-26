@@ -1,9 +1,14 @@
 use fuse::{
     FileAttr, FileType, Filesystem, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, Request,
 };
+use futures::future::{lazy, Future};
 use libc::ENOENT;
+use log::*;
+use reqwest;
 use std::env;
 use std::ffi::OsStr;
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::{thread, time::Duration};
 use time::Timespec;
 
 const TTL: Timespec = Timespec { sec: 1, nsec: 0 }; // 1 second
@@ -44,7 +49,10 @@ const HELLO_TXT_ATTR: FileAttr = FileAttr {
     flags: 0,
 };
 
-struct HelloFS;
+struct HelloFS {
+    rx: Receiver<String>,
+    poke: Sender<()>,
+}
 
 impl Filesystem for HelloFS {
     fn lookup(&mut self, _req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
@@ -73,7 +81,22 @@ impl Filesystem for HelloFS {
         reply: ReplyData,
     ) {
         if ino == 2 {
-            reply.data(&HELLO_TXT_CONTENT.as_bytes()[offset as usize..]);
+            // let s = match get_data() {
+            //     Ok(s) => s,
+            //     Err(e) => {
+            //         error!("{:?}", e);
+            //         reply.error(ENOENT);
+            //         return;
+            //     }
+            // };
+            // thread::sleep(Duration::from_secs(1));
+            // let s = "[\n{}\n]";
+            self.poke.send(()).unwrap();
+            let s = self.rx.recv().unwrap();
+            info!("Size: {}", _size);
+            info!("Sending: {}", s);
+            // let s = "Hello test";
+            reply.data(&s.as_bytes()[offset as usize..]);
         } else {
             reply.error(ENOENT);
         }
@@ -106,12 +129,26 @@ impl Filesystem for HelloFS {
     }
 }
 
+fn get_data() -> reqwest::Result<String> {
+    reqwest::get("http://localhost:9000/static/some.txt")?.text()
+}
+
 fn main() {
     env_logger::init();
+
+    let (tx, rx) = mpsc::channel();
+    let (poke, poked) = mpsc::channel();
+
+    thread::spawn(move || loop {
+        poked.recv().unwrap();
+        // tx.send("Test".to_owned()).unwrap();
+        tx.send(get_data().unwrap()).unwrap();
+    });
+
     let mountpoint = env::args_os().nth(1).unwrap();
-    let options = ["-o", "ro", "-o", "fsname=hello"]
+    let options = ["-o", "fsname=hello"]
         .iter()
         .map(|o| o.as_ref())
         .collect::<Vec<&OsStr>>();
-    fuse::mount(HelloFS, &mountpoint, &options).unwrap();
+    fuse::mount(HelloFS { rx, poke }, &mountpoint, &options).unwrap();
 }
