@@ -11,10 +11,10 @@ path = "src/lib.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fuse = "0.3.1"
-env_logger = "0.6.2"
-log = "0.4.7"
-time = "0.1.42"
-libc = "0.2.60"
-futures = "0.1.28"
-reqwest = "0.9.19"
+fuse = "0.3"
+env_logger = "0.6"
+log = "0.4"
+time = "0.1"
+libc = "0.2"
+futures = "0.1"
+reqwest = "0.9"
