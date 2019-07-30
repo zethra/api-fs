@@ -2,10 +2,9 @@ use fuse::{
     FileAttr, FileType, Filesystem, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, Request,
 };
 use std::ffi::OsStr;
+use super::ApiFS;
 
-pub(super) struct ApiFileSystem;
-
-impl Filesystem for ApiFileSystem {
+impl Filesystem for ApiFS {
     fn lookup(&mut self, _req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {}
 
     fn getattr(&mut self, _req: &Request, ino: u64, reply: ReplyAttr) {}
