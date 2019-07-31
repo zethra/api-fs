@@ -1,3 +1,4 @@
+api_type: 'REST'
 url: 'http://localhost:9000/'
 endpoints:
   - '/'

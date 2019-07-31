@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use fuse::{
     FileAttr, FileType, Filesystem, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, Request,
 };
