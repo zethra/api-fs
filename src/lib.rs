@@ -25,6 +25,7 @@ impl ApiFS {
     pub fn init(path: impl AsRef<Path>) -> Result<ApiFS, Error> {
         let api_def_path = path.as_ref().to_path_buf();
         let api_definition = ApiDefinition::load(&path)?;
+        dbg!(&api_definition);
         let fs_endpoints = get_objects_from_api(&api_definition)?;
         Ok(ApiFS {
             api_definition,
@@ -91,6 +92,21 @@ impl FSEndPoint {
         }
     }
 
+    fn get_file_type(&self) -> FileType {
+        match &self {
+            FSEndPoint::File {
+                last_updated: _,
+                inode_number: _,
+                contents: _,
+            } => FileType::RegularFile,
+            FSEndPoint::Directory {
+                last_updated: _,
+                inode_number: _,
+                contents: _,
+            } => FileType::Directory,
+        }
+    }
+
     fn to_file_attr(&self) -> FileAttr {
         match self {
             FSEndPoint::File {
@@ -116,7 +132,7 @@ impl FSEndPoint {
             FSEndPoint::Directory {
                 last_updated,
                 inode_number,
-                contents,
+                contents: _,
             } => FileAttr {
                 ino: *inode_number,
                 size: 0,

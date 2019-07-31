@@ -12,6 +12,8 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::{thread, time::Duration};
 use time::Timespec;
 
+use apifs::ApiFS;
+
 const TTL: Timespec = Timespec { sec: 1, nsec: 0 }; // 1 second
 
 const HELLO_DIR_ATTR: FileAttr = FileAttr {
@@ -137,19 +139,21 @@ fn get_data() -> reqwest::Result<String> {
 fn main() {
     env_logger::init();
 
-    let (tx, rx) = mpsc::channel();
-    let (poke, poked) = mpsc::channel();
+    let api_fs = ApiFS::init("./api-test/api.yml").unwrap();
+    println!("{:#?}", api_fs);
+    // let (tx, rx) = mpsc::channel();
+    // let (poke, poked) = mpsc::channel();
 
-    thread::spawn(move || loop {
-        poked.recv().unwrap();
-        // tx.send("Test".to_owned()).unwrap();
-        tx.send(get_data().unwrap()).unwrap();
-    });
+    // thread::spawn(move || loop {
+    //     poked.recv().unwrap();
+    //     // tx.send("Test".to_owned()).unwrap();
+    //     tx.send(get_data().unwrap()).unwrap();
+    // });
 
-    let mountpoint = env::args_os().nth(1).unwrap();
-    let options = ["-o", "fsname=hello"]
-        .iter()
-        .map(|o| o.as_ref())
-        .collect::<Vec<&OsStr>>();
-    fuse::mount(HelloFS { rx, poke }, &mountpoint, &options).unwrap();
+    // let mountpoint = env::args_os().nth(1).unwrap();
+    // let options = ["-o", "fsname=hello"]
+    //     .iter()
+    //     .map(|o| o.as_ref())
+    //     .collect::<Vec<&OsStr>>();
+    // fuse::mount(HelloFS { rx, poke }, &mountpoint, &options).unwrap();
 }

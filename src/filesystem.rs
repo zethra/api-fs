@@ -1,4 +1,4 @@
-use super::{ApiFS, FSEndPoint};
+use super::ApiFS;
 use failure::{err_msg, Error};
 use fuse::{
     FileAttr, FileType, Filesystem, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, Request,
@@ -89,6 +89,34 @@ impl Filesystem for ApiFS {
         offset: i64,
         mut reply: ReplyDirectory,
     ) {
-
+        match (|| -> Result<(), Error> {
+            let fs_endpoint = self
+                .fs_endpoints
+                .get(&ino)
+                .ok_or(err_msg("FS EP doesn't exist"))?;
+            let dir_contents = fs_endpoint.get_dir_contents()?;
+            if offset > 0 {
+                reply.add(1, 2, FileType::Directory, ".");
+            }
+            if offset > 1 {
+                reply.add(1, 2, FileType::Directory, "..");
+            }
+            for (i, (name, inode)) in dir_contents.iter().enumerate().skip(offset as usize + 2) {
+                let file_ep = self
+                    .fs_endpoints
+                    .get(&inode)
+                    .ok_or(err_msg("FS EP doesn't exist"))?;
+                reply.add(*inode, i as i64 + 3, file_ep.get_file_type(), &name);
+            }
+            Ok(())
+        })() {
+            Ok(_) => {
+                reply.ok();
+            }
+            Err(e) => {
+                error!("{:#?}", e);
+                reply.error(ENOENT);
+            }
+        }
     }
 }
