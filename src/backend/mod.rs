@@ -36,7 +36,13 @@ pub trait Backend<ID: AsRef<str>> {
 }
 
 #[derive(Debug)]
-pub struct GetObjects;
+pub struct GetObjects(PathBuf);
+
+impl GetObjects {
+    pub fn for_path(path: PathBuf) -> GetObjects {
+        GetObjects(path)
+    }
+}
 
 impl Message for GetObjects {
     type Result = Result<Vec<ApiObject>, Error>;
