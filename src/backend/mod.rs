@@ -7,15 +7,19 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(super) enum BackendType {
     REST,
 }
 
-pub(super) fn get_objects_from_api(
-    api_definition: &ApiDefinition,
-) -> Result<HashMap<u64, FSEndPoint>, Error> {
-    unimplemented!();
+// pub(super) fn get_objects_from_api(
+//     api_definition: &ApiDefinition,
+// ) -> Result<HashMap<u64, FSEndPoint>, Error> {
+//     let backend = rest::RestBackend::new(api_definition.clone());
+// }
+
+pub(super) fn get_backend(api_definition: &ApiDefinition) -> impl Backend {
+    rest::RestBackend::new(api_definition.clone())
 }
 
 /// An object in the api backend
@@ -26,14 +30,16 @@ pub struct ApiObject {
     contents: String,
 }
 
-pub trait Backend<ID: AsRef<str>> {
-    type Error;
+pub trait Backend: Actor + Handler<GetObjects> where Self: Actor<Context = Context<Self>> {}
 
-    fn get_objects(&self) -> Result<Vec<ApiObject>, Error>;
-    fn create_object(&mut self, object: ApiObject) -> Result<ID, Error>;
-    fn update_object(&mut self, id: ID, object: ApiObject) -> Result<ID, Error>;
-    fn delete_object(&mut self, id: ID) -> Result<ID, Error>;
-}
+// pub trait Backend<ID: AsRef<str>>: Actor + Handler<GetObjects> {
+//     type Error;
+
+//     fn get_objects(&self) -> Result<Vec<ApiObject>, Error>;
+//     fn create_object(&mut self, object: ApiObject) -> Result<ID, Error>;
+//     fn update_object(&mut self, id: ID, object: ApiObject) -> Result<ID, Error>;
+//     fn delete_object(&mut self, id: ID) -> Result<ID, Error>;
+// }
 
 #[derive(Debug)]
 pub struct GetObjects(PathBuf);

@@ -10,9 +10,18 @@ use std::mem;
 use try_future::*;
 
 #[derive(Debug)]
-struct RestBackend {
+pub struct RestBackend {
     api_definition: ApiDefinition,
-    client: Client,
+}
+
+impl Backend for RestBackend {}
+
+impl RestBackend {
+    pub(super) fn new(api_definition: ApiDefinition) -> RestBackend {
+        RestBackend {
+            api_definition
+        }
+    }
 }
 
 impl Actor for RestBackend {

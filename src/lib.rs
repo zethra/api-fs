@@ -2,7 +2,8 @@
 mod backend;
 mod filesystem;
 
-use backend::{get_objects_from_api, BackendType};
+use actix::prelude::*;
+use backend::{get_backend, Backend, BackendType};
 use failure::{err_msg, Error};
 use fuse::{FileAttr, FileType};
 use serde::{Deserialize, Serialize};
@@ -15,27 +16,54 @@ use std::time::SystemTime;
 use time::Timespec;
 
 #[derive(Debug)]
-pub struct ApiFS {
+pub struct ApiFS<T: Backend> {
     fs_endpoints: HashMap<u64, FSEndPoint>,
     api_definition: ApiDefinition,
     api_def_path: PathBuf,
+    backend: Addr<T>,
 }
 
-impl ApiFS {
-    pub fn init(path: impl AsRef<Path>) -> Result<ApiFS, Error> {
+impl<T: Backend> ApiFS<T> {
+    pub fn init(path: impl AsRef<Path>, backend: T) -> Result<ApiFS<T>, Error> {
         let api_def_path = path.as_ref().to_path_buf();
         let api_definition = ApiDefinition::load(&path)?;
         dbg!(&api_definition);
-        let fs_endpoints = get_objects_from_api(&api_definition)?;
+        let fs_endpoints = HashMap::new();
+        let backend = backend.start();
         Ok(ApiFS {
             api_definition,
             fs_endpoints,
             api_def_path,
+            backend,
         })
     }
 
-    pub fn sync() {
+    pub fn sync(&mut self) -> Result<(), Error> {
+        for ep in &self.api_definition.endpoints {
+            let path = Path::new(ep).to_owned();
+        }
         unimplemented!();
+    }
+}
+
+impl<T: Backend> Actor for ApiFS<T> {
+    type Context = Context<Self>;
+}
+
+pub struct Sync;
+
+impl Message for Sync {
+    type Result = Result<(), Error>;
+}
+
+impl<T: Backend> Handler<Sync> for ApiFS<T> {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, _: Sync, ctx: &mut Context<Self>) -> Self::Result {
+        for ep in &self.api_definition.endpoints {
+            let path = Path::new(ep).to_owned();
+        }
+        Ok(())
     }
 }
 
@@ -161,7 +189,7 @@ fn convert_time(time: &SystemTime) -> Timespec {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct ApiDefinition {
     api_type: BackendType,
     url: String,

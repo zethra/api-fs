@@ -1,4 +1,5 @@
 use super::ApiFS;
+use crate::backend::Backend;
 use failure::{err_msg, Error};
 use fuse::{
     FileAttr, FileType, Filesystem, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, Request,
@@ -11,7 +12,7 @@ use time::Timespec;
 
 const TTL: Timespec = Timespec { sec: 1, nsec: 0 }; // 1 second
 
-impl Filesystem for ApiFS {
+impl <T: Backend> Filesystem for ApiFS<T> {
     fn lookup(&mut self, _req: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
         match (move || -> Result<FileAttr, Error> {
             let fs_endpoint = self
